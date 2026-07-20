@@ -1,40 +1,95 @@
 (ns cartpole-math-test
-  (:require [clojure.java.shell :as shell]
+  (:require [clojure.java.io :as io]
+            [clojure.java.shell :as shell]
             [clojure.string :as str]
-            [clojure.test :refer [deftest is]]
-            [kami.cartpole-math :as cm]
+            [clojure.test :refer [deftest is testing]]
             [kotoba.compiler.core :as compiler]
             [kotoba.compiler.ir :as ir]))
 
-(deftest canonical-step-stable
-  (let [out (cm/canonical-step)]
-    (is (= 4 (count out)))
-    (is (every? number? out))
-    (is (string? (cm/output-hash out)))))
+(def source (slurp "src/kotoba/cartpole_math.kotoba"))
+(def exports ['step-x 'step-x-dot 'step-theta 'step-theta-dot])
 
-(deftest kotoba-reference-js-and-wasm-match-the-cljc-golden
-  (let [source (slurp "src/kotoba/cartpole_step.kotoba")
-        names ['next-x 'next-x-dot 'next-theta 'next-theta-dot]
-        expected (cm/canonical-step)
-        js-artifact (compiler/compile-source source :js-kotoba-v1)
+(defn oracle
+  [[[cart-mass pole-mass pole-half-length gravity force-mag dt]
+    [x x-dot theta theta-dot] action]]
+  (let [force (max (- force-mag) (min force-mag action))
+        sin-t (Math/sin theta)
+        cos-t (Math/cos theta)
+        total (+ cart-mass pole-mass)
+        pml (* pole-mass pole-half-length)
+        temp (/ (+ force (* pml theta-dot theta-dot sin-t)) total)
+        theta-acc (/ (- (* gravity sin-t) (* cos-t temp))
+                     (* pole-half-length
+                        (- (/ 4.0 3.0) (/ (* pole-mass cos-t cos-t) total))))
+        x-acc (- temp (/ (* pml theta-acc cos-t) total))
+        x-dot' (+ x-dot (* dt x-acc))
+        x' (+ x (* dt x-dot'))
+        theta-dot' (+ theta-dot (* dt theta-acc))
+        theta' (+ theta (* dt theta-dot'))]
+    [x' x-dot' theta' theta-dot']))
+
+(def cases
+  [[[1.0 0.1 0.5 9.8 10.0 0.02] [0.0 0.0 0.2 0.0] 1.0]
+   [[1.3 0.2 0.7 9.81 8.0 0.01] [0.4 -0.2 -0.35 0.12] 99.0]])
+
+(defn compiler-root []
+  (nth (iterate #(.getParent ^java.nio.file.Path %)
+                (java.nio.file.Path/of (.toURI (io/resource "kotoba/compiler/core.clj"))))
+       4))
+
+(defn close? [a b]
+  (<= (Math/abs (- (double a) (double b))) 1.0e-13))
+
+(defn js-value [value]
+  (if (sequential? value)
+    (str "[" (str/join "," (map js-value value)) "]")
+    (Double/toString (double value))))
+
+(deftest parameterized-kotoba-reference-js-and-wasm-conform
+  (let [js-artifact (compiler/compile-source source :js-kotoba-v1)
         wasm-artifact (compiler/compile-source source :wasm32-browser-kotoba-v1)
-        reference (mapv #(ir/execute (:kir js-artifact) % []) names)
+        reference (mapv (fn [args]
+                          (mapv #(ir/execute (:kir js-artifact) % args) exports))
+                        cases)
+        expected (mapv oracle cases)
         js64 (.encodeToString (java.util.Base64/getEncoder)
                               (.getBytes ^String (:source js-artifact) "UTF-8"))
         wasm64 (.encodeToString (java.util.Base64/getEncoder) (:bytes wasm-artifact))
-        node-source
-        (str "const expected=[" (str/join "," (map #(Double/toString (double %)) expected)) "];"
-             "const close=(a,b)=>Math.abs(a-b)<=1e-14;"
-             "Promise.all([import('data:text/javascript;base64," js64 "'),"
-             "WebAssembly.instantiate(Buffer.from('" wasm64 "','base64'),{})]).then(([j,w])=>{"
-             "const a=j.instantiateKotoba({}),b=w.instance.exports;"
-             "const js=[a['next-x'](),a['next-x-dot'](),a['next-theta'](),a['next-theta-dot']()];"
-             "const wa=[b['next-x'](),b['next-x-dot'](),b['next-theta'](),b['next-theta-dot']()];"
-             "if(!js.every((v,i)=>close(v,expected[i])&&Object.is(v,wa[i])))process.exit(2);"
-             "}).catch(e=>{console.error(e);process.exit(99)})")
-        node-result (shell/sh "node" "--input-type=module" "-e" node-source)]
-    (is (every? true? (map #(< (Math/abs (- %1 %2)) 1.0e-14) reference expected)))
-    (is (zero? (:exit node-result)) (:err node-result))
+        cases-json (js-value cases)
+        expected-json (js-value expected)
+        node-result (shell/sh "node" "--input-type=module" "-e"
+                              (str "import(process.argv[1]).then(async host=>{"
+                                   "const m=await import('data:text/javascript;base64," js64 "');"
+                                   "const j=m,w=await host.instantiateKotoba(Buffer.from(process.argv[2],'base64'));"
+                                   "const cases=" cases-json ",expected=" expected-json ";"
+                                   "const names=['step-x','step-x-dot','step-theta','step-theta-dot'];"
+                                   "const close=(a,b)=>Math.abs(a-b)<=1e-13;"
+                                   "const a=j.instantiateKotoba({}),b=w.instance.exports;"
+                                   "for(let c=0;c<cases.length;c++)for(let i=0;i<names.length;i++){"
+                                   "const x=a[names[i]](...cases[c]);"
+                                   "const y=b[names[i]](w.typedValues.vectorF64(cases[c][0]),w.typedValues.vectorF64(cases[c][1]),cases[c][2]);"
+                                   "if(!close(x,expected[c][i])||!close(y,expected[c][i]))process.exit(2);"
+                                   "}const validState=w.typedValues.vectorF64(cases[0][1]);"
+                                   "const rejects=[()=>a['step-x']([1],cases[0][1],1),"
+                                   "()=>b['step-x'](w.typedValues.vectorF64([1]),validState,1),"
+                                   "()=>b['step-x'](Object.freeze([1,2,3,4,5,6]),validState,1)];"
+                                   "for(const run of rejects){let rejected=false;try{run()}catch(e){rejected=true}"
+                                   "if(!rejected)process.exit(3)}"
+                                   "}).catch(e=>{console.error(e);process.exit(99)})")
+                              (.toString (.toUri (.resolve (compiler-root) "runtime/browser-host.mjs")))
+                              wasm64)]
+    (testing "reference interpreter preserves the parameterized physics contract"
+      (is (every? true? (mapcat (fn [actual want] (map close? actual want)) reference expected))))
+    (testing "restricted JavaScript and independently instantiated typed Wasm conform semantically"
+      (is (zero? (:exit node-result)) (:err node-result)))
     (is (= :kotoba.floating-point/ieee-754-f32-f64-v7
            (:floating-point-policy js-artifact)))
     (is (= #{} (set (:effects (:kir js-artifact)))))))
+
+(deftest source-and-artifact-authority
+  (is (empty? (filter #(str/ends-with? (.getName %) ".cljc")
+                      (file-seq (java.io.File. "src")))))
+  (let [artifact (compiler/compile-source source :wasm32-browser-kotoba-v1)]
+    (is (bytes? (:bytes artifact)))
+    (is (= [0 97 115 109]
+           (mapv #(bit-and (int %) 255) (take 4 (:bytes artifact)))))))

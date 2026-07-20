@@ -1,18 +1,21 @@
 # kotoba-lang/cartpole-math
 
-**SSoT for `kami.cartpole-math`** — the CLJC compute oracle plus a native
-Kotoba policy-v7 cartpole golden. `src/kotoba/cartpole_step.kotoba` expresses
-the canonical semi-implicit step with explicit f64 operations and qualified
-bounded sine/cosine; it compiles independently to restricted JavaScript and
-typed Wasm without JVM runtime semantics or host transcendental imports.
+Safety-first, parameterized cartpole physics written in Kotoba source. The
+authoritative implementation is `src/kotoba/cartpole_math.kotoba`; production
+artifacts are restricted JavaScript or typed WebAssembly and do not require a
+JVM or ClojureScript runtime.
 
-The parameterized engine-facing CLJC function remains the oracle until a
-bounded input-validation and structured f64 state ABI is qualified. The
-`.kotoba` golden deliberately owns the fixed canonical physics vector only;
-it is not yet a blanket engine cutover.
+The public bounded-vector ABI exports all four components of one semi-implicit
+Euler step (`step-x`, `step-x-dot`, `step-theta`, `step-theta-dot`). Configuration
+and state use checked `:vector-f64` values while action/results stay scalar. The
+canonical zero-argument exports remain available as reproducible smoke values.
 
 ## Test
 
 ```sh
 clojure -M:test
 ```
+
+Tests compile the same `.kotoba` source through the reference interpreter,
+restricted JavaScript, and typed Wasm. They compare observable f64 results with
+a tolerance; Wasm byte-for-byte equality is deliberately not an API contract.
