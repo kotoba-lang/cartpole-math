@@ -87,8 +87,18 @@
     (is (= #{} (set (:effects (:kir js-artifact)))))))
 
 (deftest source-and-artifact-authority
-  (is (empty? (filter #(str/ends-with? (.getName %) ".cljc")
-                      (file-seq (java.io.File. "src")))))
+  ;; NARROWED, not deleted (ADR 0001 as amended, ADR-2608133600 in
+  ;; com-junkawasaki/root). "CI rejects any production .cljc under src" was the
+  ;; rule that removed the only load path this namespace had, while
+  ;; kotoba-lang/webgpu still required `kami.cartpole-math` and pinned this repo at
+  ;; the migration commit itself. The .kotoba is still the sole SEMANTIC authority
+  ;; for the physics; the two .cljc files are the load path, held to it by
+  ;; `cartpole-math-parity-test`. A THIRD .cljc would be a fork of the authority
+  ;; with nothing asserting agreement, so it is still refused here.
+  (is (= ["src/kami/cartpole_math.cljc" "src/kotoba/cartpole_math.cljc"]
+         (->> (file-seq (java.io.File. "src"))
+              (filter #(str/ends-with? (.getName %) ".cljc"))
+              (map str) sort vec)))
   (let [artifact (compiler/compile-source source :wasm32-browser-kotoba-v1)]
     (is (bytes? (:bytes artifact)))
     (is (= [0 97 115 109]
