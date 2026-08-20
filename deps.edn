@@ -2,7 +2,7 @@
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}}
  :aliases
  {:test {:extra-paths ["test"]
-         ;; kotoba-lang/compiler is a TEST-ONLY dependency, for the tests that
+         ;; kotoba-lang/amu is a TEST-ONLY dependency, for the tests that
          ;; compile src/kotoba/cartpole_math.kotoba and require it to agree with the
          ;; restored .cljc load path (ADR 0001 as amended, and ADR-2608133600 in
          ;; com-junkawasaki/root). kotoba-lang/webgpu requires kami.cartpole-math and
@@ -10,8 +10,8 @@
          ;; /dsl-core, /async and /postfx set the same boundary.
          :extra-deps {io.github.cognitect-labs/test-runner
                       {:git/tag "v0.5.1" :git/sha "dfb30dd"}
-                      io.github.kotoba-lang/compiler
-                      {:git/url "https://github.com/kotoba-lang/compiler.git"
+                      io.github.kotoba-lang/amu
+                      {:git/url "https://github.com/kotoba-lang/amu.git"
                        :git/sha "e4dfcbc006f0749d88db8f2d710446a2d4459808"}}
          :main-opts ["-m" "cognitect.test-runner"]
          :exec-fn cognitect.test-runner.api/test}
