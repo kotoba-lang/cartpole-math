@@ -38,7 +38,7 @@
   `kotoba-lang/webgpu`'s `fixtures/cartpole-compute-golden.json` pins, so changing
   a single operation here would silently invalidate a committed golden.
 
-  `test/cartpole_math_parity_test.clj` asserts `step` agrees with the guest's four
+  `test/cartpole_math_parity_test.cljk` asserts `step` agrees with the guest's four
   scalar exports. Two divergences are stated there rather than papered over:
   `output-bytes` / `output-hash` have NO guest counterpart (the guest has no bytes,
   no float formatting and no SHA-256), and agreement on the physics is to 1e-13,

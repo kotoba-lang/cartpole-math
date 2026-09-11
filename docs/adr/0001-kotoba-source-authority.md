@@ -62,9 +62,9 @@ So:
 * `src/kotoba/cartpole_math.kotoba` — the semantic authority. Bounded typed ABI,
   deterministic clamping, bounded trigonometry, reference/JS/Wasm conformance: all
   unchanged.
-* `src/kami/cartpole_math.cljc` and `src/kotoba/cartpole_math.cljc` — the LOAD PATH,
+* `src/kami/cartpole_math.cljk` and `src/kotoba/cartpole_math.cljk` — the LOAD PATH,
   restored from `7c6cb307^`. Held to the authority by
-  `test/cartpole_math_parity_test.clj`, which compiles the `.kotoba` and runs it
+  `test/cartpole_math_parity_test.cljk`, which compiles the `.kotoba` and runs it
   through the KIR interpreter in this same JVM (the shape `kotoba-lang/css`,
   `/dsl-core`, `/async` and `/postfx` use; ADR-2608130900 in com-junkawasaki/root).
 

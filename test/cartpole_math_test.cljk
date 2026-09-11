@@ -95,7 +95,7 @@
   ;; for the physics; the two .cljc files are the load path, held to it by
   ;; `cartpole-math-parity-test`. A THIRD .cljc would be a fork of the authority
   ;; with nothing asserting agreement, so it is still refused here.
-  (is (= ["src/kami/cartpole_math.cljc" "src/kotoba/cartpole_math.cljc"]
+  (is (= ["src/kami/cartpole_math.cljk" "src/kotoba/cartpole_math.cljk"]
          (->> (file-seq (java.io.File. "src"))
               (filter #(str/ends-with? (.getName %) ".cljc"))
               (map str) sort vec)))

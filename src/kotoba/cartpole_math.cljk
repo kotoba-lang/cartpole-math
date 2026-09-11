@@ -8,7 +8,7 @@
   not loadable by any Clojure runtime, so that removed the namespace rather than
   moving it. `src/kotoba/cartpole_math.kotoba` stays the SEMANTIC AUTHORITY for the
   physics and is not reverted; this facade and `kami.cartpole-math` behind it are
-  the LOAD PATH, held to the authority by `test/cartpole_math_parity_test.clj`.
+  the LOAD PATH, held to the authority by `test/cartpole_math_parity_test.cljk`.
 
   The two surfaces are shaped differently and the parity test says how they line
   up: the guest exports four SCALAR component functions (`step-x`, `step-x-dot`,
