@@ -13,7 +13,7 @@ canonical zero-argument exports remain available as reproducible smoke values.
 ## Test
 
 ```sh
-clojure -M:test
+kbb -M:test
 ```
 
 Tests compile the same `.kotoba` source through the reference interpreter,

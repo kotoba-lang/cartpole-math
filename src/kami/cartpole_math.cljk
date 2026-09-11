@@ -9,9 +9,9 @@
   the test) sidesteps the two-repo `kami.wgsl` divergence: kami-webgpu ships a
   low-level `kami.wgsl` (expr/stmt/func), the kami-engine SDK ships a high-level
   `kami.wgsl` (emit/emit-compute-stage). Requiring the SDK's `kami.physics-compute`
-  from `bb test` would pull the SDK's `kami.wgsl` onto the JVM classpath and shadow
+  from `kbb -M:test` would pull the SDK's `kami.wgsl` onto the JVM classpath and shadow
   kami-webgpu's, breaking `wgsl-test`. So the *math* lives here (shared by the gen
-  script and the test), and only the *WGSL emission* (a separate `bb gen-compute-golden`
+  script and the test), and only the *WGSL emission* (a separate `kbb -M:gen-compute-golden`
   process with the SDK first on its classpath) touches `kami.physics-compute`.
 
   The formula is byte-for-byte the same as the `:wgsl/body` string in
@@ -104,7 +104,7 @@
 
 (defn canonical-input
   "The fixed input the compute-golden regenerates from: state, action, and cfg.
-  Both `bb gen-compute-golden` and the golden test read this so they can never drift
+  Both `kbb -M:gen-compute-golden` and the golden test read this so they can never drift
   apart on what 'the input' is."
   []
   {:state  canonical-state
