@@ -1,6 +1,6 @@
 (ns cartpole-math-test
-  (:require [clojure.java.io :as io]
-            [clojure.java.shell :as shell]
+  (:require [kotoba.bytes :as kbytes] [clojure.java.io :as io]
+            [kotoba.process :as shell]
             [kotoba.lang.text :as str]
             [kotoba.test :refer [deftest is testing]]
             [kotoba.compiler.core :as compiler]
@@ -52,9 +52,9 @@
                           (mapv #(ir/execute (:kir js-artifact) % args) exports))
                         cases)
         expected (mapv oracle cases)
-        js64 (.encodeToString (java.util.Base64/getEncoder)
-                              (.getBytes ^String (:source js-artifact) "UTF-8"))
-        wasm64 (.encodeToString (java.util.Base64/getEncoder) (:bytes wasm-artifact))
+        js64 (kbytes/base64-encode
+                              (kbytes/utf8-bytes ^String (:source js-artifact)))
+        wasm64 (kbytes/base64-encode (:bytes wasm-artifact))
         cases-json (js-value cases)
         expected-json (js-value expected)
         node-result (shell/sh "node" "--input-type=module" "-e"
