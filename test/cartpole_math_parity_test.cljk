@@ -34,7 +34,7 @@
      `(step cfg state action) == [(step-x …) (step-x-dot …) (step-theta …)
      (step-theta-dot …)]`, which is what ADR 0001 means by \"hosts assemble the four
      scalar outputs into their preferred state representation\"."
-  (:require [kotoba.test :refer [deftest is testing]]
+  (:require [kotoba.bytes :as kbytes] [kotoba.test :refer [deftest is testing]]
             [kotoba.compiler.core :as compiler]
             [kotoba.compiler.ir :as ir]
             [kami.cartpole-math :as cm]
@@ -148,7 +148,7 @@
         "the value kotoba-lang/webgpu's committed compute-golden pins")
     (testing "and the bytes it hashes are the %.12g form the golden was generated from"
       (is (= "0.000333432655698 0.0166716327849 0.200677996362 0.0338998181180"
-             (String. (cm/output-bytes (cm/canonical-step)) "UTF-8"))))
+             (kbytes/utf8-string (cm/output-bytes (cm/canonical-step))))))
     (testing "and the state itself is the golden's expected-output-state"
       (is (= [3.33432655698E-4 0.0166716327849 0.200677996362 0.033899818118]
              (mapv #(Double/parseDouble (format "%.12g" (double %)))
