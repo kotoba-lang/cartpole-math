@@ -34,7 +34,7 @@
      `(step cfg state action) == [(step-x …) (step-x-dot …) (step-theta …)
      (step-theta-dot …)]`, which is what ADR 0001 means by \"hosts assemble the four
      scalar outputs into their preferred state representation\"."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [kotoba.compiler.core :as compiler]
             [kotoba.compiler.ir :as ir]
             [kami.cartpole-math :as cm]
