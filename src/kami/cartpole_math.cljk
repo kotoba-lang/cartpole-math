@@ -49,7 +49,8 @@
   1.0e-13.
 
   Removal condition: when consumers have a load path that does not need a `.cljc`
-  (for the native route, ADR-2607279200 W4).")
+  (for the native route, ADR-2607279200 W4)."
+  (:require [kotoba.bytes :as kbytes]))
 (defn clamp
   "Mirror WGSL `clamp(x, lo, hi)`."
   [x lo hi] (max lo (min hi x)))
@@ -128,12 +129,11 @@
   what `kotoba-lang/webgpu`'s committed golden pins, so it is guarded rather than
   reimplemented for another host (ADR-2608133600). The physics above IS portable."
   [[x x-dot theta theta-dot :as state]]
-  #?(:clj (.getBytes
+  #?(:clj (kbytes/utf8-bytes
             (str (format "%.12g" (double x))    " "
                  (format "%.12g" (double x-dot)) " "
                  (format "%.12g" (double theta)) " "
-                 (format "%.12g" (double theta-dot)))
-            "UTF-8")
+                 (format "%.12g" (double theta-dot))))
      :cljs (throw (ex-info "kami.cartpole-math/output-bytes is JVM-only"
                            {:state state}))))
 
